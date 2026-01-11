@@ -260,10 +260,10 @@ describe("migrateAgentConfigToCategory", () => {
     // #when: Migrate agent config to category
     const { migrated, changed } = migrateAgentConfigToCategory(config)
 
-    // #then: Model should be replaced with category
+    // #then: Category should be added, but model preserved as explicit override when other fields exist
     expect(changed).toBe(true)
     expect(migrated.category).toBe("visual-engineering")
-    expect(migrated.model).toBeUndefined()
+    expect(migrated.model).toBe("google/gemini-3-pro-preview") // Preserved as explicit override
     expect(migrated.temperature).toBe(0.5)
     expect(migrated.top_p).toBe(0.9)
   })
@@ -334,12 +334,29 @@ describe("migrateAgentConfigToCategory", () => {
     // #when: Migrate agent config to category
     const { migrated } = migrateAgentConfigToCategory(config)
 
-    // #then: All non-model fields should be preserved
+    // #then: All fields including model should be preserved when other fields exist
     expect(migrated.category).toBe("ultrabrain")
+    expect(migrated.model).toBe("openai/gpt-5.2") // Preserved as explicit override
     expect(migrated.temperature).toBe(0.1)
     expect(migrated.top_p).toBe(0.95)
     expect(migrated.maxTokens).toBe(4096)
     expect(migrated.prompt_append).toBe("custom instruction")
+  })
+
+  test("does not migrate when category is already set", () => {
+    // #given: Config with category already set
+    const config = {
+      category: "visual-engineering",
+      model: "google/gemini-3-pro-preview",
+      temperature: 0.5,
+    }
+
+    // #when: Migrate agent config to category
+    const { migrated, changed } = migrateAgentConfigToCategory(config)
+
+    // #then: Should not migrate (category already set)
+    expect(changed).toBe(false)
+    expect(migrated).toEqual(config)
   })
 })
 
@@ -549,7 +566,8 @@ describe("migrateConfigFile with backup", () => {
     expect(agents.oracle).toBeDefined()
     expect((agents.oracle as Record<string, unknown>).category).toBe("ultrabrain")
     expect((agents.oracle as Record<string, unknown>).temperature).toBe(0.5)
-    expect((agents.oracle as Record<string, unknown>).model).toBeUndefined()
+    // Model preserved as explicit override when other fields (temperature) exist
+    expect((agents.oracle as Record<string, unknown>).model).toBe("openai/gpt-5.2")
 
     const dir = path.dirname(testConfigPath)
     const basename = path.basename(testConfigPath)

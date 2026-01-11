@@ -71,6 +71,11 @@ export function migrateAgentConfigToCategory(config: Record<string, unknown>): {
   migrated: Record<string, unknown>
   changed: boolean
 } {
+  // Don't migrate if category is already set (user explicitly set it)
+  if (config.category) {
+    return { migrated: config, changed: false }
+  }
+
   const { model, ...rest } = config
   if (typeof model !== "string") {
     return { migrated: config, changed: false }
@@ -81,6 +86,18 @@ export function migrateAgentConfigToCategory(config: Record<string, unknown>): {
     return { migrated: config, changed: false }
   }
 
+  // If user has explicit overrides (temperature, variant, etc.), preserve model as explicit override
+  // This allows users to override the category's default model if needed
+  const hasOtherFields = Object.keys(rest).filter(k => k !== "category").length > 0
+  if (hasOtherFields) {
+    // User has explicit overrides - preserve model field as explicit override, add category
+    return {
+      migrated: { category, model, ...rest },
+      changed: true,
+    }
+  }
+
+  // Only model field (no other overrides) - safe to migrate to category only
   return {
     migrated: { category, ...rest },
     changed: true,

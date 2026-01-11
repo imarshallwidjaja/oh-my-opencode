@@ -147,9 +147,42 @@ export function createBuiltinAgents(
     if (disabledAgents.includes(agentName)) continue
 
     const override = agentOverrides[agentName]
-    const model = override?.model
+    const categoryName = override?.category as string | undefined
+    const categoryConfig = categoryName ? mergedCategories[categoryName] : undefined
+    const model = override?.model ?? categoryConfig?.model
 
     let config = buildAgent(source, model, mergedCategories)
+
+    // Apply category defaults if override specifies a category (before explicit overrides)
+    if (categoryConfig && categoryName) {
+      if (categoryConfig.temperature !== undefined && config.temperature === undefined) {
+        config.temperature = categoryConfig.temperature
+      }
+      if (categoryConfig.top_p !== undefined && (config as any).top_p === undefined) {
+        ;(config as any).top_p = categoryConfig.top_p
+      }
+      if (categoryConfig.maxTokens !== undefined && (config as any).maxTokens === undefined) {
+        ;(config as any).maxTokens = categoryConfig.maxTokens
+      }
+      if (categoryConfig.variant !== undefined && (config as any).variant === undefined) {
+        ;(config as any).variant = categoryConfig.variant
+      }
+      if (categoryConfig.thinking !== undefined && (config as any).thinking === undefined) {
+        ;(config as any).thinking = categoryConfig.thinking as any
+      }
+      if (categoryConfig.reasoningEffort !== undefined && (config as any).reasoningEffort === undefined) {
+        ;(config as any).reasoningEffort = categoryConfig.reasoningEffort
+      }
+      if (categoryConfig.textVerbosity !== undefined && (config as any).textVerbosity === undefined) {
+        ;(config as any).textVerbosity = categoryConfig.textVerbosity
+      }
+      if (categoryConfig.tools !== undefined && (config as any).tools === undefined) {
+        ;(config as any).tools = categoryConfig.tools as any
+      }
+      if (categoryConfig.prompt_append && config.prompt) {
+        config.prompt = `${config.prompt}\n${categoryConfig.prompt_append}`
+      }
+    }
 
     if (agentName === "librarian" && directory && config.prompt) {
       const envContext = createEnvContext()
@@ -174,9 +207,22 @@ export function createBuiltinAgents(
 
   if (!disabledAgents.includes("Sisyphus")) {
     const sisyphusOverride = agentOverrides["Sisyphus"]
-    const sisyphusModel = sisyphusOverride?.model ?? systemDefaultModel
+    const sisyphusCategoryName = sisyphusOverride?.category as string | undefined
+    const sisyphusCategoryConfig = sisyphusCategoryName ? mergedCategories[sisyphusCategoryName] : undefined
+    const sisyphusModel = sisyphusOverride?.model ?? sisyphusCategoryConfig?.model ?? systemDefaultModel
 
     let sisyphusConfig = createSisyphusAgent(sisyphusModel, availableAgents)
+
+    // Apply category defaults if override specifies a category (before explicit overrides)
+    if (sisyphusCategoryConfig && sisyphusCategoryName) {
+      if (sisyphusCategoryConfig.temperature !== undefined && sisyphusConfig.temperature === undefined) {
+        sisyphusConfig.temperature = sisyphusCategoryConfig.temperature
+      }
+      if (sisyphusCategoryConfig.variant !== undefined && (sisyphusConfig as any).variant === undefined) {
+        ;(sisyphusConfig as any).variant = sisyphusCategoryConfig.variant
+      }
+      // Other category fields applied via mergeAgentConfig if not already set
+    }
 
     if (directory && sisyphusConfig.prompt) {
       const envContext = createEnvContext()
@@ -192,11 +238,24 @@ export function createBuiltinAgents(
 
   if (!disabledAgents.includes("orchestrator-sisyphus")) {
     const orchestratorOverride = agentOverrides["orchestrator-sisyphus"]
-    const orchestratorModel = orchestratorOverride?.model
+    const orchestratorCategoryName = orchestratorOverride?.category as string | undefined
+    const orchestratorCategoryConfig = orchestratorCategoryName ? mergedCategories[orchestratorCategoryName] : undefined
+    const orchestratorModel = orchestratorOverride?.model ?? orchestratorCategoryConfig?.model
     let orchestratorConfig = createOrchestratorSisyphusAgent({
       model: orchestratorModel,
       availableAgents,
     })
+
+    // Apply category defaults if override specifies a category (before explicit overrides)
+    if (orchestratorCategoryConfig && orchestratorCategoryName) {
+      if (orchestratorCategoryConfig.temperature !== undefined && orchestratorConfig.temperature === undefined) {
+        orchestratorConfig.temperature = orchestratorCategoryConfig.temperature
+      }
+      if (orchestratorCategoryConfig.variant !== undefined && (orchestratorConfig as any).variant === undefined) {
+        ;(orchestratorConfig as any).variant = orchestratorCategoryConfig.variant
+      }
+      // Other category fields applied via mergeAgentConfig if not already set
+    }
 
     if (orchestratorOverride) {
       orchestratorConfig = mergeAgentConfig(orchestratorConfig, orchestratorOverride)
