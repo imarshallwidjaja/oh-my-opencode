@@ -102,6 +102,9 @@
             "model": {
               "type": "string"
             },
+            "variant": {
+              "type": "string"
+            },
             "category": {
               "type": "string"
             },
@@ -225,6 +228,9 @@
             "model": {
               "type": "string"
             },
+            "variant": {
+              "type": "string"
+            },
             "category": {
               "type": "string"
             },
@@ -346,6 +352,9 @@
           "type": "object",
           "properties": {
             "model": {
+              "type": "string"
+            },
+            "variant": {
               "type": "string"
             },
             "category": {
@@ -594,6 +603,9 @@
             "model": {
               "type": "string"
             },
+            "variant": {
+              "type": "string"
+            },
             "category": {
               "type": "string"
             },
@@ -715,6 +727,9 @@
           "type": "object",
           "properties": {
             "model": {
+              "type": "string"
+            },
+            "variant": {
               "type": "string"
             },
             "category": {
@@ -840,6 +855,9 @@
             "model": {
               "type": "string"
             },
+            "variant": {
+              "type": "string"
+            },
             "category": {
               "type": "string"
             },
@@ -961,6 +979,9 @@
           "type": "object",
           "properties": {
             "model": {
+              "type": "string"
+            },
+            "variant": {
               "type": "string"
             },
             "category": {
@@ -1086,6 +1107,9 @@
             "model": {
               "type": "string"
             },
+            "variant": {
+              "type": "string"
+            },
             "category": {
               "type": "string"
             },
@@ -1207,6 +1231,9 @@
           "type": "object",
           "properties": {
             "model": {
+              "type": "string"
+            },
+            "variant": {
               "type": "string"
             },
             "category": {
@@ -1332,6 +1359,9 @@
             "model": {
               "type": "string"
             },
+            "variant": {
+              "type": "string"
+            },
             "category": {
               "type": "string"
             },
@@ -1453,6 +1483,9 @@
           "type": "object",
           "properties": {
             "model": {
+              "type": "string"
+            },
+            "variant": {
               "type": "string"
             },
             "category": {
@@ -1578,6 +1611,9 @@
             "model": {
               "type": "string"
             },
+            "variant": {
+              "type": "string"
+            },
             "category": {
               "type": "string"
             },
@@ -1701,6 +1737,9 @@
             "model": {
               "type": "string"
             },
+            "variant": {
+              "type": "string"
+            },
             "category": {
               "type": "string"
             },
@@ -1822,6 +1861,9 @@
           "type": "object",
           "properties": {
             "model": {
+              "type": "string"
+            },
+            "variant": {
               "type": "string"
             },
             "category": {
@@ -1952,6 +1994,9 @@
         "type": "object",
         "properties": {
           "model": {
+            "type": "string"
+          },
+          "variant": {
             "type": "string"
           },
           "temperature": {
