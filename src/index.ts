@@ -445,6 +445,7 @@ const OhMyOpenCodePlugin: Plugin = async (ctx) => {
           setMainSession(undefined);
         }
         if (sessionInfo?.id) {
+          clearSessionAgent(sessionInfo.id);
           firstMessageVariantGate.clear(sessionInfo.id);
           await skillMcpManager.disconnectSession(sessionInfo.id);
           await lspManager.cleanupTempDirectoryClients();
