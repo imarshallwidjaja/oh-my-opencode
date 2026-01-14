@@ -1441,7 +1441,6 @@ export function createOrchestratorSisyphusAgent(ctx?: OrchestratorContext): Agen
     "task",
     "call_omo_agent",
   ])
-
   return {
     description:
       "Orchestrates work via sisyphus_task() to complete ALL tasks in a todo list until fully done",
@@ -1450,6 +1449,7 @@ export function createOrchestratorSisyphusAgent(ctx?: OrchestratorContext): Agen
     temperature: 0.1,
     prompt: buildDynamicOrchestratorPrompt(ctx),
     thinking: { type: "enabled", budgetTokens: 32000 },
+    color: "#10B981",
     ...restrictions,
   } as AgentConfig
 }

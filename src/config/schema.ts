@@ -198,7 +198,7 @@ export const DynamicContextPruningConfigSchema = z.object({
   /** Tools that should never be pruned */
   protected_tools: z.array(z.string()).default([
     "task", "todowrite", "todoread",
-    "lsp_rename", "lsp_code_action_resolve",
+    "lsp_rename",
     "session_read", "session_write", "session_search",
   ]),
   /** Pruning strategies configuration */
@@ -311,7 +311,6 @@ export const OhMyOpenCodeConfigSchema = z.object({
   agents: AgentOverridesSchema.optional(),
   categories: CategoriesConfigSchema.optional(),
   claude_code: ClaudeCodeConfigSchema.optional(),
-  google_auth: z.boolean().optional(),
   sisyphus_agent: SisyphusAgentConfigSchema.optional(),
   comment_checker: CommentCheckerConfigSchema.optional(),
   experimental: ExperimentalConfigSchema.optional(),

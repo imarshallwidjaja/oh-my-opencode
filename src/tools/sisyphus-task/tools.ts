@@ -89,6 +89,7 @@ function resolveCategoryConfig(
 export interface SisyphusTaskToolOptions {
   manager: BackgroundManager
   client: OpencodeClient
+  directory: string
   userCategories?: CategoriesConfig
   gitMasterConfig?: GitMasterConfig
 }
@@ -146,7 +147,7 @@ export function buildSystemContent(input: BuildSystemContentInput): string | und
 }
 
 export function createSisyphusTask(options: SisyphusTaskToolOptions): ToolDefinition {
-  const { manager, client, userCategories, gitMasterConfig } = options
+  const { manager, client, directory, userCategories, gitMasterConfig } = options
 
   return tool({
     description: SISYPHUS_TASK_DESCRIPTION,
@@ -271,12 +272,22 @@ Use \`background_output\` with task_id="${task.id}" to check progress.`
         })
 
         try {
+          const resumeMessageDir = getMessageDir(args.resume)
+          const resumeMessage = resumeMessageDir ? findNearestMessageWithFields(resumeMessageDir) : null
+          const resumeAgent = resumeMessage?.agent
+          const resumeModel = resumeMessage?.model?.providerID && resumeMessage?.model?.modelID
+            ? { providerID: resumeMessage.model.providerID, modelID: resumeMessage.model.modelID }
+            : undefined
+
           await client.session.prompt({
             path: { id: args.resume },
             body: {
+              ...(resumeAgent !== undefined ? { agent: resumeAgent } : {}),
+              ...(resumeModel !== undefined ? { model: resumeModel } : {}),
               tools: {
                 task: false,
                 sisyphus_task: false,
+                call_omo_agent: true,
               },
               parts: [{ type: "text", text: buildPromptWithWorkdir(args.prompt, args.workdir) }],
             },
@@ -459,10 +470,18 @@ System notifies on completion. Use \`background_output\` with task_id="${task.id
       let syncSessionID: string | undefined
 
       try {
+        const parentSession = client.session.get
+          ? await client.session.get({ path: { id: ctx.sessionID } }).catch(() => null)
+          : null
+        const parentDirectory = parentSession?.data?.directory ?? directory
+
         const createResult = await client.session.create({
           body: {
             parentID: ctx.sessionID,
             title: `Task: ${args.description}`,
+          },
+          query: {
+            directory: parentDirectory,
           },
         })
 
@@ -500,6 +519,7 @@ System notifies on completion. Use \`background_output\` with task_id="${task.id
               tools: {
                 task: false,
                 sisyphus_task: false,
+                call_omo_agent: true,
               },
               parts: [{ type: "text", text: args.prompt }],
               ...(categoryModel ? { model: categoryModel } : {}),
@@ -525,41 +545,64 @@ System notifies on completion. Use \`background_output\` with task_id="${task.id
         const pollStart = Date.now()
         let lastMsgCount = 0
         let stablePolls = 0
+        let pollCount = 0
+
+        log("[sisyphus_task] Starting poll loop", { sessionID, agentToUse })
 
         while (Date.now() - pollStart < MAX_POLL_TIME_MS) {
+          if (ctx.abort?.aborted) {
+            log("[sisyphus_task] Aborted by user", { sessionID })
+            if (toastManager && taskId) toastManager.removeTask(taskId)
+            return `Task aborted.\n\nSession ID: ${sessionID}`
+          }
+
           await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS))
+          pollCount++
 
           const statusResult = await client.session.status()
           const allStatuses = (statusResult.data ?? {}) as Record<string, { type: string }>
           const sessionStatus = allStatuses[sessionID]
 
-          // If session is actively running, reset stability
+          if (pollCount % 10 === 0) {
+            log("[sisyphus_task] Poll status", {
+              sessionID,
+              pollCount,
+              elapsed: Math.floor((Date.now() - pollStart) / 1000) + "s",
+              sessionStatus: sessionStatus?.type ?? "not_in_status",
+              stablePolls,
+              lastMsgCount,
+            })
+          }
+
           if (sessionStatus && sessionStatus.type !== "idle") {
             stablePolls = 0
             lastMsgCount = 0
             continue
           }
 
-          // Session is idle or not in status - check message stability
           const elapsed = Date.now() - pollStart
           if (elapsed < MIN_STABILITY_TIME_MS) {
-            continue  // Don't accept completion too early
+            continue
           }
 
-          // Get current message count
           const messagesCheck = await client.session.messages({ path: { id: sessionID } })
           const msgs = ((messagesCheck as { data?: unknown }).data ?? messagesCheck) as Array<unknown>
           const currentMsgCount = msgs.length
 
-          if (currentMsgCount > 0 && currentMsgCount === lastMsgCount) {
+          if (currentMsgCount === lastMsgCount) {
             stablePolls++
             if (stablePolls >= STABILITY_POLLS_REQUIRED) {
-              break  // Messages stable for 3 polls - task complete
+              log("[sisyphus_task] Poll complete - messages stable", { sessionID, pollCount, currentMsgCount })
+              break
             }
           } else {
             stablePolls = 0
             lastMsgCount = currentMsgCount
           }
+        }
+
+        if (Date.now() - pollStart >= MAX_POLL_TIME_MS) {
+          log("[sisyphus_task] Poll timeout reached", { sessionID, pollCount, lastMsgCount, stablePolls })
         }
 
         const messagesResult = await client.session.messages({

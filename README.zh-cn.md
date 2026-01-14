@@ -28,8 +28,29 @@
 
 > 这是开挂级别的编程——`oh-my-opencode` 实战效果。运行后台智能体，调用专业智能体如 oracle、librarian 和前端工程师。使用精心设计的 LSP/AST 工具、精选的 MCP，以及完整的 Claude Code 兼容层。
 
+# Claude OAuth 访问通知
 
-**注意：请勿为 librarian 使用昂贵的模型。这不仅对你没有帮助，还会增加 LLM 服务商的负担。请使用 Claude Haiku、Gemini Flash、GLM 4.7 或 MiniMax 等模型。**
+## TL;DR
+
+> Q. 我可以使用 oh-my-opencode 吗？
+
+可以。
+
+> Q. 我可以用 Claude Code 订阅来使用它吗？
+
+是的，技术上可以。但我不建议使用。
+
+## 详细说明
+
+> 自2026年1月起，Anthropic 以违反服务条款为由限制了第三方 OAuth 访问。
+>
+> [**Anthropic 将本项目 oh-my-opencode 作为封锁 opencode 的理由。**](https://x.com/thdxr/status/2010149530486911014)
+>
+> 事实上，社区中确实存在一些伪造 Claude Code OAuth 请求签名的插件。
+>
+> 无论技术上是否可检测，这些工具可能都能正常工作，但用户应注意服务条款的相关影响，我个人不建议使用这些工具。
+>
+> 本项目对使用非官方工具产生的任何问题概不负责，**我们没有任何这些 OAuth 系统的自定义实现。**
 
 
 <div align="center">
@@ -93,8 +114,7 @@
       - [Google Gemini (Antigravity OAuth)](#google-gemini-antigravity-oauth)
         - [模型配置](#模型配置)
         - [oh-my-opencode 智能体模型覆盖](#oh-my-opencode-智能体模型覆盖)
-      - [OpenAI (ChatGPT Plus/Pro)](#openai-chatgpt-pluspro)
-        - [模型配置](#模型配置-1)
+
     - [⚠️ 警告](#️-警告)
     - [验证安装](#验证安装)
     - [向用户说 '恭喜！🎉'](#向用户说-恭喜)
@@ -353,11 +373,10 @@ opencode auth login
 
 ##### oh-my-opencode 智能体模型覆盖
 
-`opencode-antigravity-auth` 插件使用与内置 Google 认证不同的模型名称。在 `oh-my-opencode.json`（或 `.opencode/oh-my-opencode.json`）中覆盖智能体模型，并禁用内置的 `google_auth`：
+`opencode-antigravity-auth` 插件使用特定的模型名称。在 `oh-my-opencode.json`（或 `.opencode/oh-my-opencode.json`）中覆盖智能体模型：
 
 ```json
 {
-  "google_auth": false,
   "agents": {
     "frontend-ui-ux-engineer": { "model": "google/antigravity-gemini-3-pro-high" },
     "document-writer": { "model": "google/antigravity-gemini-3-flash" },
@@ -381,37 +400,46 @@ opencode auth login
 
 **多账号负载均衡**：该插件支持最多 10 个 Google 账号。当一个账号达到速率限制时，它会自动切换到下一个可用账号。
 
-#### OpenAI (ChatGPT Plus/Pro)
+#### GitHub Copilot（备用提供商）
 
-首先，添加 opencode-openai-codex-auth 插件：
+GitHub Copilot 作为**备用提供商**受支持，当原生提供商（Claude、ChatGPT、Gemini）不可用时使用。安装程序将 Copilot 配置为低于原生提供商的优先级。
 
-```json
-{
-  "plugin": [
-    "oh-my-opencode",
-    "opencode-openai-codex-auth@4.3.0"
-  ]
-}
+**优先级**：原生提供商 (Claude/ChatGPT/Gemini) > GitHub Copilot > 免费模型
+
+##### 模型映射
+
+启用 GitHub Copilot 后，oh-my-opencode 使用以下模型分配：
+
+| 代理 | 模型 |
+|------|------|
+| **Sisyphus** | `github-copilot/claude-opus-4.5` |
+| **Oracle** | `github-copilot/gpt-5.2` |
+| **Explore** | `grok code`（默认） |
+| **Librarian** | `glm 4.7 free`（默认） |
+
+GitHub Copilot 作为代理提供商，根据你的订阅将请求路由到底层模型。
+
+##### 设置
+
+运行安装程序并为 GitHub Copilot 选择"是"：
+
+```bash
+bunx oh-my-opencode install
+# 选择你的订阅（Claude、ChatGPT、Gemini）
+# 出现提示时："Do you have a GitHub Copilot subscription?" → 选择"是"
 ```
 
-##### 模型配置
+或使用非交互模式：
 
-你还需要在 `opencode.json` 中配置完整的模型设置。
-阅读 [opencode-openai-codex-auth 文档](https://github.com/numman-ali/opencode-openai-codex-auth)，从 [`config/opencode-modern.json`](https://github.com/numman-ali/opencode-openai-codex-auth/blob/main/config/opencode-modern.json)（适用于 OpenCode v1.0.210+）或 [`config/opencode-legacy.json`](https://github.com/numman-ali/opencode-openai-codex-auth/blob/main/config/opencode-legacy.json)（适用于旧版本）复制 provider/models 配置，并仔细合并以避免破坏用户现有的设置。
+```bash
+bunx oh-my-opencode install --no-tui --claude=no --chatgpt=no --gemini=no --copilot=yes
+```
 
-**可用模型**：`openai/gpt-5.2`、`openai/gpt-5.2-codex`、`openai/gpt-5.1-codex-max`、`openai/gpt-5.1-codex`、`openai/gpt-5.1-codex-mini`、`openai/gpt-5.1`
-
-**变体**（OpenCode v1.0.210+）：使用 `--variant=<none|low|medium|high|xhigh>` 控制推理力度。
-
-然后进行认证：
+然后使用 GitHub 进行身份验证：
 
 ```bash
 opencode auth login
-# 交互式终端：Provider：选择 OpenAI
-# 交互式终端：Login method：选择 ChatGPT Plus/Pro (Codex Subscription)
-# 交互式终端：引导用户在浏览器中完成 OAuth 流程
-# 等待完成
-# 验证成功并向用户确认
+# 选择：GitHub → 通过 OAuth 进行身份验证
 ```
 
 
@@ -419,7 +447,7 @@ opencode auth login
 
 **除非用户明确要求，否则不要更改模型设置或禁用功能（智能体、钩子、MCP）。**
 
-该插件默认情况下运行良好。未使用外部 Antigravity 插件时保持 `google_auth: true`；如果按上方说明接入 `opencode-antigravity-auth`，请将 `google_auth` 设为 `false` 并覆盖智能体模型。除此之外，不要在没有明确请求的情况下更改其他设置或关闭功能。
+该插件默认情况下运行良好。如果使用 `opencode-antigravity-auth`，请按上方说明覆盖智能体模型。除此之外，不要在没有明确请求的情况下更改其他设置或关闭功能。
 
 ### 验证安装
 
@@ -541,17 +569,13 @@ gh repo star code-yeongyu/oh-my-opencode
 你编辑器中的功能？其他智能体无法触及。
 把你最好的工具交给你最好的同事。现在它们可以正确地重构、导航和分析。
 
-- **lsp_hover**：位置处的类型信息、文档、签名
 - **lsp_goto_definition**：跳转到符号定义
 - **lsp_find_references**：查找工作区中的所有使用
-- **lsp_document_symbols**：获取文件符号概览
-- **lsp_workspace_symbols**：按名称在项目中搜索符号
+- **lsp_symbols**：从文件获取符号 (scope='document') 或在工作区中搜索 (scope='workspace')
 - **lsp_diagnostics**：在构建前获取错误/警告
 - **lsp_servers**：列出可用的 LSP 服务器
 - **lsp_prepare_rename**：验证重命名操作
 - **lsp_rename**：在工作区中重命名符号
-- **lsp_code_actions**：获取可用的快速修复/重构
-- **lsp_code_action_resolve**：应用代码操作
 - **ast_grep_search**：AST 感知的代码模式搜索（25 种语言）
 - **ast_grep_replace**：AST 感知的代码替换
 - **call_omo_agent**：生成专业的 explore/librarian 智能体。支持 `run_in_background` 参数进行异步执行。
@@ -803,9 +827,6 @@ Oh My OpenCode 从以下位置读取和执行钩子：
 {
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
 
-  // 通过 Antigravity OAuth 启用 Google Gemini
-  "google_auth": false,
-
   /* 智能体覆盖 - 为特定任务自定义模型 */
   "agents": {
     "oracle": {
@@ -820,26 +841,17 @@ Oh My OpenCode 从以下位置读取和执行钩子：
 
 ### Google 认证
 
-**推荐**：使用外部 [`opencode-antigravity-auth`](https://github.com/NoeFabris/opencode-antigravity-auth) 插件。它提供多账号负载均衡、更多模型（包括通过 Antigravity 的 Claude）和积极的维护。参见[安装 > Google Gemini](#google-gemini-antigravity-oauth)。
+使用外部 [`opencode-antigravity-auth`](https://github.com/NoeFabris/opencode-antigravity-auth) 插件进行 Google 认证。它提供多账号负载均衡、更多模型（包括通过 Antigravity 的 Claude）和积极的维护。参见[安装 > Google Gemini](#google-gemini-antigravity-oauth)。
 
-使用 `opencode-antigravity-auth` 时，禁用内置认证并在 `oh-my-opencode.json` 中覆盖智能体模型：
+使用 `opencode-antigravity-auth` 时，在 `oh-my-opencode.json` 中覆盖智能体模型：
 
 ```json
 {
-  "google_auth": false,
   "agents": {
     "frontend-ui-ux-engineer": { "model": "google/antigravity-gemini-3-pro-high" },
     "document-writer": { "model": "google/antigravity-gemini-3-flash" },
     "multimodal-looker": { "model": "google/antigravity-gemini-3-flash" }
   }
-}
-```
-
-**替代方案**：启用内置 Antigravity OAuth（单账号，仅 Gemini 模型）：
-
-```json
-{
-  "google_auth": true
 }
 ```
 
